@@ -27,8 +27,9 @@ import (
 	"github.com/dapr/kit/logger"
 )
 
+// EVAL "WATCH KEYS[1]\nlocal v=redis.call('GET',KEYS[1]) if v==false then return-1 end if v~=ARGV[1] then return-2 else redis.call('MULTI') redis.call('PUBLISH',KEYS[1],'Your message goes here') redis.call('DEL',KEYS[1]) local results=redis.call('EXEC') if results then return results[#results] else return nil end end" 1 your_key your_argument
 const (
-	unlockScript             = "local v = redis.call(\"get\",KEYS[1]); if v==false then return -1 end; if v~=ARGV[1] then return -2 else return redis.call(\"del\",KEYS[1]) end"
+	unlockScript             = "local v = redis.call(\"get\",KEYS[1]); if v==false then return -1 end; if v~=ARGV[1] then return -2 else redis.call(\"publish\", KEYS[1], \"Your message goes here\") return redis.call(\"del\",KEYS[1]) end"
 	connectedSlavesReplicas  = "connected_slaves:"
 	infoReplicationDelimiter = "\r\n"
 )
@@ -136,6 +137,38 @@ func (r *StandaloneRedisLock) TryLock(ctx context.Context, req *lock.TryLockRequ
 	return &lock.TryLockResponse{
 		Success: *nxval,
 	}, nil
+}
+
+// Acquire a redis lock.
+func (r *StandaloneRedisLock) Lock(ctx context.Context, req *lock.LockRequest) (*lock.LockResponse, error) {
+	expiry := time.Duration(req.ExpiryInSeconds) * time.Second
+
+	for {
+		nxval, err := r.client.SetNX(ctx, req.ResourceID, req.LockOwner, expiry)
+		if err != nil {
+			return &lock.LockResponse{}, err
+		}
+
+		if nxval == nil {
+			return &lock.LockResponse{}, fmt.Errorf("[standaloneRedisLock]: SetNX returned nil.ResourceID: %s", req.ResourceID)
+		}
+
+		if !*nxval {
+			sub := r.client.Subscribe(ctx, req.ResourceID)
+
+			_, err = sub.ReceiveTimeout(ctx, expiry)
+			if err != nil || sub.Close() != nil {
+				return &lock.LockResponse{}, err
+			}
+
+			fmt.Println("lock is not available")
+			continue
+		}
+
+		return &lock.LockResponse{
+			Success: *nxval,
+		}, nil
+	}
 }
 
 // Try to release a redis lock.

@@ -75,6 +75,7 @@ type RedisClient interface {
 	ConfigurationSubscribe(ctx context.Context, args *ConfigurationSubscribeArgs)
 	SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) (*bool, error)
 	EvalInt(ctx context.Context, script string, keys []string, args ...interface{}) (*int, error, error)
+	Subscribe(ctx context.Context, channel string) RedisSubscription
 	XAdd(ctx context.Context, stream string, maxLenApprox int64, values map[string]interface{}) (string, error)
 	XGroupCreateMkStream(ctx context.Context, stream string, group string, start string) error
 	XAck(ctx context.Context, stream string, group string, messageID string) error
@@ -83,6 +84,11 @@ type RedisClient interface {
 	XClaimResult(ctx context.Context, stream string, group string, consumer string, minIdleTime time.Duration, messageIDs []string) ([]RedisXMessage, error)
 	TxPipeline() RedisPipeliner
 	TTLResult(ctx context.Context, key string) (time.Duration, error)
+}
+
+type RedisSubscription interface {
+	Close() error
+	ReceiveTimeout(ctx context.Context, timeout time.Duration) (interface{}, error)
 }
 
 type ConfigurationSubscribeArgs struct {

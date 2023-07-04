@@ -146,6 +146,10 @@ func (c v9Client) EvalInt(ctx context.Context, script string, keys []string, arg
 	return &i, err, eval.Err()
 }
 
+func (c v9Client) Subscribe(ctx context.Context, key string) RedisSubscription {
+	return c.client.Subscribe(ctx, key)
+}
+
 func (c v9Client) SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) (*bool, error) {
 	var writeCtx context.Context
 	if c.writeTimeout > 0 {

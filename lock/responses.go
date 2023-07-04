@@ -18,6 +18,10 @@ type TryLockResponse struct {
 	Success bool `json:"success"`
 }
 
+type LockResponse struct {
+	Success bool `json:"success"`
+}
+
 // Status when releasing the lock.
 type UnlockResponse struct {
 	Status Status `json:"status"`

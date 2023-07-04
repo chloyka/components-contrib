@@ -163,6 +163,10 @@ func (c v8Client) SetNX(ctx context.Context, key string, value interface{}, expi
 	return &val, nx.Err()
 }
 
+func (c v8Client) Subscribe(ctx context.Context, key string) RedisSubscription {
+	return c.client.Subscribe(ctx, key)
+}
+
 func (c v8Client) XAdd(ctx context.Context, stream string, maxLenApprox int64, values map[string]interface{}) (string, error) {
 	var writeCtx context.Context
 	if c.writeTimeout > 0 {

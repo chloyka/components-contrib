@@ -20,6 +20,13 @@ type TryLockRequest struct {
 	ExpiryInSeconds int32  `json:"expiryInSeconds"`
 }
 
+// LockRequest is a blocking lock acquire request.
+type LockRequest struct {
+	ResourceID      string `json:"resourceId"`
+	LockOwner       string `json:"lockOwner"`
+	ExpiryInSeconds int32  `json:"expiryInSeconds"`
+}
+
 // UnlockRequest is a lock release request.
 type UnlockRequest struct {
 	ResourceID string `json:"resourceId"`
